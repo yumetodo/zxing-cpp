@@ -59,8 +59,8 @@ public:
     values_ = other.values_;
     return *this;
   }
-  Array<T>& operator=(const std::vector<T> &array) {
-    values_ = array;
+  Array<T>& operator=(const std::vector<T> &arr) {
+    values_ = arr;
     return *this;
   }
   T const& operator[](int i) const {

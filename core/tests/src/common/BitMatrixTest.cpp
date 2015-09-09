@@ -21,16 +21,14 @@
 #include "BitMatrixTest.h"
 #include <limits>
 #include <stdlib.h>
-#include <unistd.h>
+#include "cpp11_rand.h"
 
 namespace zxing {
 using namespace std;
 
 CPPUNIT_TEST_SUITE_REGISTRATION(BitMatrixTest);
 
-BitMatrixTest::BitMatrixTest() {
-  srand(getpid());
-}
+BitMatrixTest::BitMatrixTest() { }
 
 void BitMatrixTest::testGetSet() {
   const int bits = BitMatrix::bitsPerWord;
@@ -86,21 +84,23 @@ void BitMatrixTest::testGetRow3() {
 }
 
 void BitMatrixTest::runBitMatrixGetRowTest(int width, int height) {
-  BitMatrix mat(width, height);
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      bool v = ((rand() & 0x01) != 0);
-      if (v) {
-        mat.set(x, y);
-      }
-    }
-  }
-  Ref<BitArray> row(new BitArray(width));
-  for (int y = 0; y < height; y++) {
-    row = mat.getRow(y, row);
-    for (int x = 0; x < width; x++) {
-      CPPUNIT_ASSERT_EQUAL(row->get(x), mat.get(x,y));
-    }
-  }
+	auto engine = create_random_engine(0);
+	std::bernoulli_distribution distribution(0.5);//distribbution of bool
+
+	BitMatrix mat(width, height);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			if (distribution(engine)) {
+				mat.set(x, y);
+			}
+		}
+	}
+	Ref<BitArray> row(new BitArray(width));
+	for (int y = 0; y < height; y++) {
+		row = mat.getRow(y, row);
+		for (int x = 0; x < width; x++) {
+			CPPUNIT_ASSERT_EQUAL(row->get(x), mat.get(x, y));
+		}
+	}
 }
 }

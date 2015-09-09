@@ -25,6 +25,8 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
+#include "../cpp11_rand.h"
 
 namespace zxing {
 using namespace std;
@@ -68,18 +70,18 @@ void ReedSolomonTest::testNoError() {
 }
 
 void ReedSolomonTest::testOneError() {
-  ArrayRef<int> received(new Array<int>(qrCodeTestWithEc_->size()));
-  srandom(0xDEADBEEFL);
-  for (int i = 0; i < received->size(); i++) {
-    *received = *qrCodeTestWithEc_;
-    received[i] = random() % 256;
-    checkQRRSDecode(received);
-  }
+	ArrayRef<int> received(new Array<int>(qrCodeTestWithEc_->size()));
+	auto engine = create_random_engine(0xDEADBEEF);
+	std::uniform_int_distribution<int> distribution(0, 255);
+	for (int i = 0; i < received->size(); i++) {
+		*received = *qrCodeTestWithEc_;
+		received[i] = distribution(engine);
+		checkQRRSDecode(received);
+	}
 }
 
 void ReedSolomonTest::testMaxErrors() {
   ArrayRef<int> received(new Array<int>(qrCodeTestWithEc_->size()));
-  srandom(0xDEADBEEFL);
   for (int i = 0; i < qrCodeTest_->size(); i++) {
     *received = *qrCodeTestWithEc_;
     corrupt(received, qrCodeCorrectable_);
@@ -89,14 +91,13 @@ void ReedSolomonTest::testMaxErrors() {
 
 void ReedSolomonTest::testTooManyErrors() {
   ArrayRef<int> received(new Array<int>(qrCodeTestWithEc_->size()));
-  srandom(0xDEADBEEFL);
   *received = *qrCodeTestWithEc_;
   try {
     corrupt(received, qrCodeCorrectable_ + 1);
     checkQRRSDecode(received);
     cout << "expected exception!\n";
     CPPUNIT_FAIL("should not happen!");
-  } catch (ReedSolomonException const& e) {
+  } catch (ReedSolomonException const&) {
     // expected
   } catch (...) {
     CPPUNIT_FAIL("unexpected exception!");
@@ -113,17 +114,22 @@ void ReedSolomonTest::checkQRRSDecode(ArrayRef<int> &received) {
 }
 
 void ReedSolomonTest::corrupt(ArrayRef<int> &received, int howMany) {
-  vector<bool> corrupted(received->size());
-  for (int j = 0; j < howMany; j++) {
-    int location = floor(received->size() * ((double)(random() >> 1) / (double)((RAND_MAX >> 1) + 1)));
-    if (corrupted[location]) {
-      j--;
-    } else {
-      corrupted[location] = true;
-      int newByte = random() % 256;
-      received[location] = newByte;
-    }
-  }
+	vector<bool> corrupted(received->size());
+	auto engine = create_random_engine(0xDEADBEEF);
+	std::uniform_real_distribution<double> distribution_f(0.0);
+	std::uniform_int_distribution<int> distribution_i(0, 255);
+	for (int j = 0; j < howMany; j++) {
+		const double r = distribution_f(engine);
+		int location = static_cast<int>(floor((1.0 == r) ? received->size() * (r - 1) : received->size() * r));
+		if (corrupted[location]) {
+			j--;
+		}
+		else {
+			corrupted[location] = true;
+			int newByte = distribution_i(engine);
+			received[location] = newByte;
+		}
+	}
 }
 
 }

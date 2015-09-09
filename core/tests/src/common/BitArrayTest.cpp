@@ -21,6 +21,7 @@
 #include "BitArrayTest.h"
 #include <limits>
 #include <cstdlib>
+#include "cpp11_rand.h"
 
 using namespace std;
 
@@ -96,13 +97,15 @@ void BitArrayTest::testIsRange() {
 
 // fills the two arrays with identical random bits
 void BitArrayTest::fillRandom(BitArray& test, BitArray& reference) {
-  srandom(0xDEADBEEFL + test.getSize());
-  for(int i = 0; i < test.getSize(); ++i) {
-    if(random() & 0x1) {
-      test.set(i);
-      reference.set(i);
-    }
-  }
+	//C++11:random generate
+	auto engine = create_random_engine(0xDEADBEEF + test.getSize());
+	std::bernoulli_distribution distribution(0.5);//distribbution of bool
+	for (int i = 0; i < test.getSize(); ++i) {
+		if (distribution(engine)) {
+			test.set(i);
+			reference.set(i);
+		}
+	}
 }
 
 void BitArrayTest::testReverseHalves() {
